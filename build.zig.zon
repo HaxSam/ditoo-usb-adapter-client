@@ -1,0 +1,22 @@
+.{
+    .name = .ditoo_usb_adapter_client,
+    .version = "0.0.0",
+    .fingerprint = 0x10e4aa245d9901ca, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.15.0-dev.635+7dbd21bd5",
+
+    .dependencies = .{
+        .zig_msgpack = .{
+            .url = "git+https://github.com/zigcc/zig-msgpack#9e86de8a79b8093bafc9a19c83b0b340da054659",
+            .hash = "zig_msgpack-0.0.8-evvueDjQAACcvfAQ2JW_65CFLqcZcof0Y7Z9Bdw6mHTz",
+        },
+        .serial = .{
+            .url = "git+https://github.com/ZigEmbeddedGroup/serial#ad338133eda8d86332718bbdc58c641a66307c84",
+            .hash = "serial-0.0.1-PoeRzI20AABcp4FffI6HXKOL6LcGPKmeqfN4Bna4-YYm",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
