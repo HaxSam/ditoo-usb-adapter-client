@@ -45,7 +45,8 @@ pub fn main() !void {
             .ext => {
                 std.debug.print("Ext {d}: {any}\n", .{ payload.ext.type, payload.ext.data });
                 if (payload.ext.type == 1) {
-                    try p.write(.{ .ext = .{ .data = @constCast(&[_]u8{ 177, 33, 129, 100, 226, 158 }), .type = 1 } });
+                    try p.write(.{ .ext = .{ .data = @constCast(&[_]u8{ 0, 0, 0, 0, 0, 0 }), .type = 1 } });
+                    try p.write(.{ .ext = .{ .data = @constCast(&[_]u8{0}), .type = 0 } });
                     //try p.write(.{ .ext = .{ .data = &data, .type = 2 } });
                 }
             },
