@@ -130,7 +130,7 @@ cmd: CMD,
 data: []u8,
 allocator: Allocator,
 
-pub fn init(T: type, cmd: CMD, data: *const T, allocator: Allocator) !Packet {
+pub fn init(cmd: CMD, data: []const u8, allocator: Allocator) !Packet {
     return Packet{
         .cmd = cmd,
         .data = try allocator.dupe(u8, data),
@@ -149,14 +149,57 @@ pub fn serialize(self: *const Packet, allocator: Allocator) ![]u8 {
     std.mem.writePackedInt(u16, buf, 8, @intCast(self.data.len + 3), .little);
     buf[3] = @intFromEnum(self.cmd);
     std.mem.copyForwards(u8, buf[4 .. self.data.len + 4], self.data);
-    std.mem.writePackedInt(u16, buf, 8 * (self.data.len + 4), calc_checksum(self), .little);
+    std.mem.writePackedInt(u16, buf, 8 * (self.data.len + 4), self.calc_checksum(false), .little);
     buf[buf.len - 1] = 0x02;
 
     return buf;
 }
 
-fn calc_checksum(self: *const Packet) u16 {
+// TODO: include error handling
+pub fn deserialize(comptime T: type, packet_data: *const T, allocator: Allocator) !Packet {
+    var buffer_stream = std.io.fixedBufferStream(packet_data);
+    var reader = buffer_stream.reader();
+
+    if (try reader.readByte() != 0x01)
+        _ = 1;
+
+    const size = try reader.readInt(u16, .little);
+    const maincmd = try reader.readByte();
+    const data_size =
+        if (maincmd == 0x04)
+            size - 4
+        else
+            size - 3;
+    const cmd: CMD =
+        if (maincmd == 0x04)
+            @enumFromInt(try reader.readByte())
+        else
+            @enumFromInt(maincmd);
+
+    var packet = Packet{
+        .cmd = cmd,
+        .data = try allocator.alloc(u8, data_size),
+        .allocator = allocator,
+    };
+
+    if (try reader.readAtLeast(packet.data, data_size) != data_size)
+        _ = 1;
+
+    const checksum = try reader.readInt(u16, .little);
+
+    if (packet.calc_checksum(maincmd == 0x04) != checksum)
+        _ = 1;
+
+    if (try reader.readByte() != 0x02)
+        _ = 1;
+
+    return packet;
+}
+
+fn calc_checksum(self: *const Packet, maincmd: bool) u16 {
     var checksum: u16 = @intFromEnum(self.cmd);
+    if (maincmd)
+        checksum += 0x04;
     checksum = @truncate(checksum + self.data.len + 3);
     for (self.data) |d| {
         checksum = @truncate(checksum + d);
